@@ -1,4 +1,4 @@
---variables
+-- Variables
 local enabled = false
 local minimapScale = 0.0
 local minimapBlurScale = 0.0
@@ -25,15 +25,15 @@ local positions = {
     },
 }
 
+--- Updates the minimap and its blur component positions based on current settings.
 local function updateMinimap()
-    -- Update the minimap position
     SetMinimapComponentPosition('minimap', 'L', 'B',
         positions[clipType].minimap.x + minimapOffsetX,
         positions[clipType].minimap.y + minimapOffsetY,
         positions[clipType].minimap.w + minimapScale,
         positions[clipType].minimap.h + minimapScale
     )
-    -- Update the blur background of the minimap
+
     SetMinimapComponentPosition('minimap_blur', 'L', 'B',
         positions[clipType].minimap_blur.x + minimapOffsetX,
         positions[clipType].minimap_blur.y + minimapOffsetY,
@@ -42,6 +42,7 @@ local function updateMinimap()
     )
 end
 
+--- Displays the text UI for minimap editing instructions.
 local function showTextUI()
     lib.showTextUI(
         ('Edit Mini Map:         \n') ..
@@ -54,12 +55,15 @@ local function showTextUI()
     )
 end
 
+--- Hides the text UI for minimap editing.
 local function hideTextUI()
     lib.hideTextUI()
 end
 
+--- Main loop to handle minimap position and scale adjustments.
 local function placerLoop()
     updateMinimap()
+
     while enabled do
         local up = false
         local moveSpeed = 0.0005
@@ -71,6 +75,7 @@ local function placerLoop()
             moveSpeed = 0.00025
         end
 
+        -- Handling movement and scaling inputs
         if IsControlPressed(0, 172) then -- Arrow Up
             minimapOffsetY = minimapOffsetY - moveSpeed
             up = true
@@ -97,46 +102,57 @@ local function placerLoop()
             minimapBlurScale = minimapBlurScale - 0.00475 -- Adjust this value as needed
             up = true
         end
+
+        -- If any input was detected, update the minimap
         if up then
             updateMinimap()
         end
+
         Citizen.Wait(16)
     end
 end
 
+--- Stops the editing process and hides the text UI.
+--- @return table Returns the final minimap configuration (offsets and scale).
 local function stopEditing()
     enabled = false
     hideTextUI()
+
     return { offsetX = minimapOffsetX, offsetY = minimapOffsetY, scale = minimapScale }
 end
 
--- exports
+--- Activates the minimap placement tool.
+--- @param _clipType number The minimap configuration type to be used (0 or 1).
+--- @return table|boolean Returns the final minimap configuration if successful, false otherwise.
 local function usePlacer(_clipType)
     if enabled then
         print("Minimap placer is already active.")
         return false
     end
-    -- Reset
+
+    -- Reset values
     minimapScale = 0.0
     minimapBlurScale = 0.0
     minimapOffsetX = 0.0
     minimapOffsetY = 0.0
-    --<
+
     clipType = _clipType or 0
     DisplayRadar(true)
+
     -- Enable the placer and show UI instructions
     enabled = true
     showTextUI()
+
     -- Start the placer loop for real-time adjustments
     placerLoop()
-    -- Hide radar and activate big map to refresh the minimap display
+
+    -- Refresh the minimap display
     DisplayRadar(false)
     SetBigmapActive(true, false)
-    -- Wait for the map refresh to take effect
     Wait(100)
-    -- Deactivate big map and redisplay the minimap
     SetBigmapActive(false, false)
     DisplayRadar(true)
+
     -- Finalize and return the minimap configuration
     return stopEditing()
 end
